@@ -1,0 +1,7 @@
+fastapi
+groq
+httpx
+python-dotenv
+requests
+uvicorn
+
