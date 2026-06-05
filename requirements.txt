@@ -1,7 +1,14 @@
+chromadb
 fastapi
+gitpython 
 groq
 httpx
+langchain
+langchain-community
+langchain-text-splitters
+pymupdf
 python-dotenv
 requests
+sentence-transformers
 uvicorn
 
