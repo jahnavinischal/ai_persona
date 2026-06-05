@@ -2,7 +2,7 @@ import json
 import os
 import httpx
 import asyncio
-
+import time
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -241,6 +241,12 @@ async def chat_completions(request: Request):
     messages = [m for m in messages if m.get("role") != "system"]
 
     full_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+
+    start = time.time()
+    message = await call_groq(full_messages)
+    latency = time.time() - start
+    print(f"LATENCY: {latency:.3f}s")
+
     message = await call_groq(full_messages)
 
     if message.tool_calls:
