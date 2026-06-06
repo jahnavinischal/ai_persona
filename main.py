@@ -23,31 +23,15 @@ from rag.retriever import get_context
 
 import os
 from dotenv import load_dotenv
-load_dotenv()
 
 # Explicitly set HF token
 hf_token = os.getenv("HF_TOKEN")
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-
 load_dotenv()
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     from rag.ingest import ingest_resume, ingest_github, ingest_commits
-#     import chromadb
-#     client = chromadb.PersistentClient(path="./chroma_db")
-#     collection = client.get_or_create_collection("persona")
-#     if collection.count() == 0:
-#         print("Starting ingestion...")
-#         ingest_resume("resume.pdf")
-#         ingest_github("jahnavinischal")
-#         ingest_commits("jahnavinischal")
-#         print("Ingestion complete!")
-#     else:
-#         print(f"Skipping ingestion — {collection.count()} chunks already in DB")
-#     yield
+os.environ["CHROMA_CACHE_DIR"] = "/opt/render/.cache/chroma"
 
 
 def run_ingestion_sync():
@@ -94,6 +78,8 @@ async def root():
 GROQ_KEYS = [
     os.getenv("GROQ_API_KEY"),
     os.getenv("GROQ_API_KEY_2"), 
+    os.getenv("GROQ_API_KEY_3")
+
 ]
 
 TOOLS = [
@@ -123,7 +109,6 @@ TOOLS = [
         },
     },
 ]
-
 
 async def run_tool(name: str, args: dict) -> str:
     print("TOOL CALLED:", name, "ARGS:", args)
@@ -159,27 +144,42 @@ async def run_tool(name: str, args: dict) -> str:
             print("UNEXPECTED ERROR:", type(e), e)
             return f"Booking error: {str(e)}"
 
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+]
+
 async def call_groq(messages: list, max_tokens: int = 300) -> object:
     for key in GROQ_KEYS:
         if not key:
             continue
-        try:
-            client = AsyncGroq(api_key=key)
-            response = await client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=messages,
-                tools=TOOLS,
-                tool_choice="auto",
-                max_tokens=max_tokens,
-                temperature=0.4,
-            )
-            return response.choices[0].message
-        except Exception as e:
-            if "rate_limit" in str(e).lower() or "429" in str(e):
-                print(f"Rate limit on key, trying next...")
+        for model in GROQ_MODELS:
+            try:
+                client = AsyncGroq(api_key=key)
+                response = await asyncio.wait_for(
+                    client.chat.completions.create(
+                        model=model,
+                        messages=messages,
+                        tools=TOOLS,
+                        tool_choice="auto",
+                        max_tokens=max_tokens,
+                        temperature=0.4,
+                    ),
+                    timeout=8.0  # fail fast, don't wait forever
+                )
+                print(f"Used model: {model}")
+                return response.choices[0].message
+            except asyncio.TimeoutError:
+                print(f"Timeout on {model}, trying next...")
                 continue
-            raise
-    raise Exception("All Groq API keys exhausted")
+            except Exception as e:
+                if "rate_limit" in str(e).lower() or "429" in str(e) or "decommissioned" in str(e).lower():
+                    print(f"Rate limit on {model}, trying next...")
+                    continue
+                raise
+    raise Exception("All Groq keys and models exhausted")
 
 @app.post("/chat")
 async def chat(request: Request):
