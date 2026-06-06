@@ -5,48 +5,14 @@ An end-to-end AI persona that answers calls, chats and books interviews autonomo
 Built for the Scaler AI Engineer screening assignment.
 
 **Live links**
-- 🌐 Chat UI: `https://your-app.onrender.com`
+- 🌐 Chat UI: `https://ai-persona-1-7kjz.onrender.com/`
 - 📞 Voice agent: `+13184889192`
 
 ---
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Caller / Recruiter                        │
-└────────────────┬──────────────────────────┬─────────────────────┘
-                 │ Phone call                │ Browser chat
-                 ▼                           ▼
-         ┌───────────────┐         ┌──────────────────┐
-         │  Vapi (STT +  │         │  Chat UI          │
-         │  ElevenLabs   │         │  static/index.html│
-         │  TTS)         │         └────────┬─────────┘
-         └──────┬────────┘                  │ POST /api/chat
-                │ POST /chat/completions     │
-                ▼                           ▼
-┌───────────────────────────────────────────────────────────────┐
-│                    FastAPI Backend (Render)                     │
-│                                                               │
-│  /chat/completions  ──► Groq LLaMA-3.3-70B ──► stream SSE    │
-│  /api/chat          ──► RAG retrieval ──► Groq ──► JSON       │
-│                                                               │
-│  ┌──────────────────┐    ┌───────────────────────────────┐   │
-│  │  RAG Pipeline    │    │  Calendar Tools               │   │
-│  │  ChromaDB        │    │  get_availability()           │   │
-│  │  all-MiniLM-L6   │    │  book_meeting()               │   │
-│  │  152 chunks      │    │  Cal.com v2 API               │   │
-│  └──────────────────┘    └───────────────────────────────┘   │
-└───────────────────────────────────────────────────────────────┘
-         │ ingest on startup
-         ▼
-┌─────────────────────────────┐
-│  Knowledge Sources           │
-│  • resume.pdf (18 chunks)   │
-│  • GitHub READMEs (97)      │
-│  • Commit history (37)      │
-└─────────────────────────────┘
-```
+![Architecture Diagram](architecture.png)
 
 ---
 
