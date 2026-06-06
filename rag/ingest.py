@@ -5,17 +5,34 @@ import requests
 import chromadb
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Explicitly set HF token
+hf_token = os.getenv("HF_TOKEN")
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+_embedding_model = None
+
 
 def get_or_create_collection():
     return chroma_client.get_or_create_collection("persona")
 
+def get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model
+
 def embed(texts: list[str]) -> list[list[float]]:
-    return embedding_model.encode(texts).tolist()
+    return get_embedding_model().encode(texts).tolist()
+
+# def embed(texts: list[str]) -> list[list[float]]:
+#     return embedding_model.encode(texts).tolist()
 
 def ingest_resume(pdf_path: str = "resume.pdf"):
     doc = fitz.open(pdf_path)

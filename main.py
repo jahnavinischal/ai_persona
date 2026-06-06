@@ -4,6 +4,7 @@ import httpx
 import asyncio
 import time
 import re
+import threading
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -20,26 +21,64 @@ import sys
 sys.path.append(".")
 from rag.retriever import get_context
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Explicitly set HF token
+hf_token = os.getenv("HF_TOKEN")
+
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 load_dotenv()
 
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     from rag.ingest import ingest_resume, ingest_github, ingest_commits
+#     import chromadb
+#     client = chromadb.PersistentClient(path="./chroma_db")
+#     collection = client.get_or_create_collection("persona")
+#     if collection.count() == 0:
+#         print("Starting ingestion...")
+#         ingest_resume("resume.pdf")
+#         ingest_github("jahnavinischal")
+#         ingest_commits("jahnavinischal")
+#         print("Ingestion complete!")
+#     else:
+#         print(f"Skipping ingestion — {collection.count()} chunks already in DB")
+#     yield
+
+
+def run_ingestion_sync():
+    try:
+        import chromadb
+        client = chromadb.PersistentClient(path="./chroma_db")
+        collection = client.get_or_create_collection("persona")
+        if collection.count() == 0:
+            print("Starting ingestion...")
+            from rag.ingest import ingest_resume, ingest_github, ingest_commits
+            ingest_resume("resume.pdf")
+            ingest_github("jahnavinischal")
+            ingest_commits("jahnavinischal")
+            print("Ingestion complete!")
+        else:
+            print(f"Skipping ingestion — {collection.count()} chunks already stored")
+        # Pre-warm embedding model so first request isn't slow
+        from rag.retriever import get_embedding_model
+        get_embedding_model()
+        print("Embedding model warmed up.")
+    except Exception as e:
+        print(f"Ingestion error: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from rag.ingest import ingest_resume, ingest_github, ingest_commits
-    import chromadb
-    client = chromadb.PersistentClient(path="./chroma_db")
-    collection = client.get_or_create_collection("persona")
-    if collection.count() == 0:
-        print("Starting ingestion...")
-        ingest_resume("resume.pdf")
-        ingest_github("jahnavinischal")
-        ingest_commits("jahnavinischal")
-        print("Ingestion complete!")
-    else:
-        print(f"Skipping ingestion — {collection.count()} chunks already in DB")
+    # Start ingestion in a separate thread — doesn't block port binding
+    thread = threading.Thread(target=run_ingestion_sync, daemon=True)
+    thread.start()
     yield
+
+app = FastAPI(lifespan=lifespan)
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
