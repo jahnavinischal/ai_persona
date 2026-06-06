@@ -14,7 +14,10 @@ hf_token = os.getenv("HF_TOKEN")
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
+import os
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chroma_db")
+chroma_client = chromadb.PersistentClient(path=DB_PATH)
+# chroma_client = chromadb.PersistentClient(path="./chroma_db")
 # embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 _embedding_model = None
 
