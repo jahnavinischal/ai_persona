@@ -64,16 +64,12 @@ def run_ingestion_sync():
             print("Ingestion complete!")
         else:
             print(f"Skipping ingestion — {collection.count()} chunks already stored")
-        # Pre-warm embedding model so first request isn't slow
-        from rag.retriever import get_embedding_model
-        get_embedding_model()
-        print("Embedding model warmed up.")
     except Exception as e:
         print(f"Ingestion error: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start ingestion in a separate thread — doesn't block port binding
+    # Start ingestion in a separate thread- doesn't block port binding
     thread = threading.Thread(target=run_ingestion_sync, daemon=True)
     thread.start()
     yield

@@ -9,6 +9,6 @@ langchain-text-splitters
 pymupdf
 python-dotenv
 requests
-sentence-transformers
+# sentence-transformers
 uvicorn
 
