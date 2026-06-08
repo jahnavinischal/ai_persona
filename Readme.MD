@@ -8,6 +8,14 @@ Built for the Scaler AI Engineer screening assignment.
 - 🌐 Chat UI: `https://ai-persona-1-7kjz.onrender.com/`
 - 📞 Voice agent: `+13184889192`
 
+## Voice Agent
+
+**Primary number**: `+13184889192` (Twilio)
+**Backup number**: `+18392084202` (Vapi)  
+**Web demo**: [Talk to Jahnavi's AI](https://vapi.ai?demo=true&shareKey=48f050cd-eafa-43a3-a595-44696035fd1b&assistantId=a63d542e-4fa6-4f25-a4d1-987f34cc2bb4)
+
+> If calling the phone number doesn't work from India, please use the backup number or web demo link above, it works from any browser, no phone needed. Full voice conversation with booking works identical to a phone call.
+
 ---
 
 ## Architecture
